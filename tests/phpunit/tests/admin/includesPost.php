@@ -9,6 +9,7 @@ class Tests_Admin_Includes_Post extends WP_UnitTestCase {
 	protected static $editor_id;
 	protected static $admin_id;
 	protected static $post_id;
+	protected $backupGlobals = true;
 
 	protected static $user_ids = array();
 
@@ -900,5 +901,43 @@ class Tests_Admin_Includes_Post extends WP_UnitTestCase {
 			)
 		);
 		$this->assertSame( 0, post_exists( $title, null, null, 'post' ) );
+	}
+
+	/**
+	 * Test the status support in post_exists()
+	 * 
+	 * @ticket 34012
+	 */
+	public function test_post_exists_should_support_post_status() {
+		$title       = 'Foo Bar';
+		$post_type   = 'post';
+		$post_status = 'publish';
+		$post_id   = self::factory()->post->create(
+			array(
+				'post_title'  => $title,
+				'post_type'   => $post_type,
+				'post_status' => $post_status,
+			)
+		);
+		$this->assertSame( $post_id, post_exists( $title, null, null, null, $post_status ) );
+	}
+
+	/**
+	 * Test that post_exists() doesn't find an existing draft post when looking for publish
+	 * 
+	 * @ticket 34012
+	 */
+	public function test_post_exists_should_only_match_correct_post_status() {
+		$title      = 'Foo Bar';
+		$post_type  = 'post';
+		$post_status = 'draft';
+		$post_id   = self::factory()->post->create(
+			array(
+				'post_title'  => $title,
+				'post_type'   => $post_type,
+				'post_status' => $post_status,
+			)
+		);
+		$this->assertSame( 0, post_exists( $title, null, null, null, 'publish' ) );
 	}
 }
