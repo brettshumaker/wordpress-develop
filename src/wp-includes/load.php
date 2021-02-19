@@ -1505,13 +1505,13 @@ function is_wp_error( $thing ) {
 
 	if ( $is_wp_error ) {
 		/**
-		 * Fires when `is_wp_error()` is called and it's an instance of `WP_Error`.
+		 * Fires when `is_wp_error()` is called and its parameter is an instance of `WP_Error`.
 		 *
 		 * @since 5.6.0
 		 *
 		 * @param WP_Error $thing The error object passed to `is_wp_error()`.
 		 */
-		do_action( 'wp_error_checked', $thing );
+		do_action( 'is_wp_error_instance', $thing );
 	}
 
 	return $is_wp_error;
@@ -1684,4 +1684,48 @@ function wp_is_xml_request() {
 	}
 
 	return false;
+}
+
+/**
+ * Checks if this site is protected by HTTP Basic Auth.
+ *
+ * At the moment, this merely checks for the present of Basic Auth credentials. Therefore, calling
+ * this function with a context different from the current context may give inaccurate results.
+ * In a future release, this evaluation may be made more robust.
+ *
+ * Currently, this is only used by Application Passwords to prevent a conflict since it also utilizes
+ * Basic Auth.
+ *
+ * @since 5.6.1
+ *
+ * @global string $pagenow The current page.
+ *
+ * @param string $context The context to check for protection. Accepts 'login', 'admin', and 'front'.
+ *                        Defaults to the current context.
+ * @return bool Whether the site is protected by Basic Auth.
+ */
+function wp_is_site_protected_by_basic_auth( $context = '' ) {
+	global $pagenow;
+
+	if ( ! $context ) {
+		if ( 'wp-login.php' === $pagenow ) {
+			$context = 'login';
+		} elseif ( is_admin() ) {
+			$context = 'admin';
+		} else {
+			$context = 'front';
+		}
+	}
+
+	$is_protected = ! empty( $_SERVER['PHP_AUTH_USER'] ) || ! empty( $_SERVER['PHP_AUTH_PW'] );
+
+	/**
+	 * Filters whether a site is protected by HTTP Basic Auth.
+	 *
+	 * @since 5.6.1
+	 *
+	 * @param bool $is_protected Whether the site is protected by Basic Auth.
+	 * @param string $context    The context to check for protection. One of 'login', 'admin', or 'front'.
+	 */
+	return apply_filters( 'wp_is_site_protected_by_basic_auth', $is_protected, $context );
 }
